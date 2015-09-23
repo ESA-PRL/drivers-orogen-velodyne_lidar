@@ -27,6 +27,21 @@ task_context "LaserScanner" do
    output_port("laser_scans_lower_head", "velodyne_lidar::MultilevelLaserScan").
         doc 'laserscans of the lower head. Note: this output is only available on the Velodyne HDL-64E'
 
+   output_port("ir_frame", ro_ptr("/base/samples/frame/Frame")).
+    doc("video raw ir image retrieved from LiDAR")
+
+   output_port("ir_interp_frame", ro_ptr("/base/samples/frame/Frame")).
+    doc("video interpolated ir image retrieved from LiDAR")
+
+   output_port("range_frame", ro_ptr("/base/samples/frame/Frame")).
+    doc("video raw range image retrieved from LiDAR")
+
+   output_port("range_interp_frame", ro_ptr("/base/samples/frame/Frame")).
+    doc("video interpolated range image retrieved from LiDAR")
+
+   output_port("azimuth_frame", ro_ptr("/base/samples/frame/Frame")).
+    doc("video azimuth image retrieved from LiDAR")
+	
    error_states :IO_ERROR, :IO_TIMEOUT
 end
 

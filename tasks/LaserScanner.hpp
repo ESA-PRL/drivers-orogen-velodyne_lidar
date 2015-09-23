@@ -50,7 +50,8 @@ namespace velodyne_lidar {
     
     protected:
         VelodyneDataDriver laserdriver;
-        velodyne_data_packet_t buffer;
+        velodyne_data_packet_t buffer32or64;
+	velodyne_data_packet16_t buffer16;
         States last_state;
         int last_packet_period; // in microseconds
         uint32_t last_gps_timestamp; // in microseconds
@@ -59,15 +60,33 @@ namespace velodyne_lidar {
         /* The HDL-32E has only an upper head */
         LaserHeadVariables upper_head;
         LaserHeadVariables lower_head;
+
+	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> ir_frame_p;
+	base::samples::frame::Frame *ir_frame;
+
+	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> ir_interp_frame_p;
+	base::samples::frame::Frame *ir_interp_frame;
+
+	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> range_frame_p;
+	base::samples::frame::Frame *range_frame;
+
+	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> range_interp_frame_p;
+	base::samples::frame::Frame *range_interp_frame;
         
+	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> azimuth_frame_p;
+	base::samples::frame::Frame *azimuth_frame;
     protected:
         bool isScanComplete(const base::Angle &current_angle, const LaserHeadVariables& laser_vars) const;
         void handleHorizontalScan(const velodyne_fire_t& horizontal_scan, LaserHeadVariables& laser_vars);
+        void handleHorizontalScan(const velodyne_fire16_t& horizontal_scan, LaserHeadVariables& laser_vars, int lower_upper_shot);
         void addDummyData(const base::Angle &next_angle, LaserHeadVariables& laser_vars);
         
     private:
         bool getFirstAngle(LaserHead head_pos, const velodyne_data_packet& new_scans, base::Angle& first_angle) const;
         void createHorizontalDummy(const base::Angle &angle, LaserHead head_pos, velodyne_fire_t& horizontal_scan) const;
+	
+	//overloaded functions that can handle the VLP 16 datapacket
+	bool getFirstAngle(LaserHead head_pos, const velodyne_data_packet16& new_scans, base::Angle& first_angle) const;
 
     public:
         /** TaskContext constructor for Task
