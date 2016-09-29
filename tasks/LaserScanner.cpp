@@ -254,7 +254,7 @@ void LaserScanner::handleHorizontalScan(const velodyne_fire16_t& horizontal_scan
             _range_frame.write(range_frame_p);
 
 	    azimuth_frame->setImage(azimuthImage,azimuth_count*16*2);
-            azimuth_frame->time = base::Time::now();
+            azimuth_frame->time = current_time_stamp;
             azimuth_frame_p.reset(azimuth_frame);
             _azimuth_frame.write(azimuth_frame_p);
 
