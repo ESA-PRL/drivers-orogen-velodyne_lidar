@@ -96,6 +96,8 @@ void LaserScanner::handleHorizontalScan(const velodyne_fire16_t& horizontal_scan
 
     if(isScanComplete(scan_angle, laser_vars))
     {
+	    
+	base::Time current_time_stamp = base::Time::now();
         // resize the array of all scans to the actual count
         laser_vars.output_scan.horizontal_scans.resize(laser_vars.horizontal_scan_count);
         
@@ -230,8 +232,6 @@ void LaserScanner::handleHorizontalScan(const velodyne_fire16_t& horizontal_scan
 			
 			}
 		}
-
-	    base::Time current_time_stamp = base::Time::now();
 
 	    ir_interp_frame->setImage(ir_interpImage,azimuth_count*150*2);
 	    ir_interp_frame->time = current_time_stamp;
