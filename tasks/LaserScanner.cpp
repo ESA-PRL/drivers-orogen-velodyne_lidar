@@ -467,6 +467,18 @@ void LaserScanner::updateHook()
             gps_timestamp = buffer32or64.gps_timestamp;
         }
 
+        // Update the timestamp estimator(s) using the reference from LiDAR
+        // If we already have got a last timestamp we can calc a difference of the 32 Bit timestamps and accumulate it on top of a 64 Bit storage
+        if (last_gps_timestamp > 0)
+        {
+            // Accumulate the 32 Bit timestamps in a 64 Bit storage
+            // According to the datasheet the 32 Bit timestamps are clamped at hour level, so we have to use modulo here
+            uint32_t diff = ((gps_time_stamp - last_gps_timestamp) % (3600 * 1000000)); 
+            lidar_time_ref = lidar_time_ref + diff;
+            upper_head.timestamp_estimator->updateReference( base::Time::fromMicroseconds(lidar_time_ref) );
+            lower_head.timestamp_estimator->updateReference( base::Time::fromMicroseconds(lidar_time_ref) );
+        }
+
         if(last_gps_timestamp > 0 && last_gps_timestamp < gps_timestamp)
         {
             if(last_packet_period + gps_timestamp_tolerance < gps_timestamp - last_gps_timestamp)

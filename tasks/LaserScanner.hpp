@@ -51,11 +51,12 @@ namespace velodyne_lidar {
     protected:
         VelodyneDataDriver laserdriver;
         velodyne_data_packet_t buffer32or64;
-	velodyne_data_packet16_t buffer16;
+        velodyne_data_packet16_t buffer16;
         States last_state;
         int last_packet_period; // in microseconds
         uint32_t last_gps_timestamp; // in microseconds
         uint32_t gps_timestamp_tolerance; // in microseconds
+        uint64_t lidar_time_ref; // accumulated microseconds from LiDaR: This is used to provide a reference to the timestamp estimator which takes care about removing the offset
                 
         /* The HDL-32E has only an upper head */
         LaserHeadVariables upper_head;
