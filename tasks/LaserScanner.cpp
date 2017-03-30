@@ -233,6 +233,7 @@ void LaserScanner::handleHorizontalScan(const velodyne_fire16_t& horizontal_scan
                 }
             }
 
+            // FIXME: Shouldn't these values use the same timestamp as the laser_scans?
             ir_interp_frame->setImage(ir_interpImage,azimuth_count*150*2);
             ir_interp_frame->time = current_time_stamp;
             ir_interp_frame_p.reset(ir_interp_frame);
