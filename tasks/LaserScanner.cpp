@@ -375,8 +375,6 @@ bool LaserScanner::configureHook()
     return true;
 }
 
-
-
 bool LaserScanner::startHook()
 {
 
@@ -407,6 +405,9 @@ bool LaserScanner::startHook()
     unsigned scans_per_turn = 20000; // upper guess
     unsigned min_range = _min_range.get() * 1000; // m to mm
     unsigned max_range = _max_range.get() * 1000; // m to mm
+
+    // initialize time reference
+    lidar_time_ref = base::Time::now().toMicroseconds();
 
     // initiate head variables
     upper_head.timestamp_estimator->reset();
@@ -474,7 +475,7 @@ void LaserScanner::updateHook()
         {
             // Accumulate the 32 Bit timestamps in a 64 Bit storage
             // According to the datasheet the 32 Bit timestamps are clamped at hour level, so we have to use modulo here
-            uint32_t diff = ((gps_time_stamp - last_gps_timestamp) % (3600 * 1000000)); 
+            uint32_t diff = ((gps_timestamp - last_gps_timestamp) % (3600 * 1000000));
             lidar_time_ref = lidar_time_ref + diff;
             upper_head.timestamp_estimator->updateReference( base::Time::fromMicroseconds(lidar_time_ref) );
             lower_head.timestamp_estimator->updateReference( base::Time::fromMicroseconds(lidar_time_ref) );
