@@ -41,6 +41,10 @@ task_context "LaserScanner" do
 
    output_port("azimuth_frame", ro_ptr("/base/samples/frame/Frame")).
     doc("video azimuth image retrieved from LiDAR")
+
+   output_port("velodyne_time", 'uint32_t')
+   output_port("accumulated_velodyne_time", '/base/Time')
+   output_port("estimated_clock_offset", 'uint64_t')
 	
    error_states :IO_ERROR, :IO_TIMEOUT
 end

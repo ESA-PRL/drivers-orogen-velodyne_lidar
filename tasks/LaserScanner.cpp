@@ -51,6 +51,7 @@ void LaserScanner::handleHorizontalScan(const velodyne_fire_t& horizontal_scan, 
         // interpolate time between the actual and the last sample for all vertical scans
         base::Time last_output_time = laser_vars.output_scan.time;
         laser_vars.output_scan.time = laser_vars.timestamp_estimator->update(laser_vars.last_sample_time);
+        laser_vars.last_sample_time = base::Time::now();
 
         if(last_output_time.microseconds == 0 || last_output_time > laser_vars.output_scan.time)
             last_output_time = laser_vars.output_scan.time;
@@ -79,7 +80,6 @@ void LaserScanner::handleHorizontalScan(const velodyne_fire_t& horizontal_scan, 
     // add the new vertical scan to the output data
     laserdriver.convertToVerticalMultilevelScan(horizontal_scan, laser_vars.output_scan.horizontal_scans[laser_vars.horizontal_scan_count]);
     laser_vars.horizontal_scan_count++;
-    laser_vars.last_sample_time = base::Time::now();
 }
 
 void LaserScanner::handleHorizontalScan(const velodyne_fire16_t& horizontal_scan, LaserScanner::LaserHeadVariables& laser_vars, int lower_upper_shot)
@@ -97,13 +97,14 @@ void LaserScanner::handleHorizontalScan(const velodyne_fire16_t& horizontal_scan
     if(isScanComplete(scan_angle, laser_vars))
     {
 
-        base::Time current_time_stamp = base::Time::now();
+        //base::Time current_time_stamp = base::Time::now();
         // resize the array of all scans to the actual count
         laser_vars.output_scan.horizontal_scans.resize(laser_vars.horizontal_scan_count);
 
         // interpolate time between the actual and the last sample for all vertical scans
         base::Time last_output_time = laser_vars.output_scan.time;
         laser_vars.output_scan.time = laser_vars.timestamp_estimator->update(laser_vars.last_sample_time);
+        laser_vars.last_sample_time = base::Time::now();
 
         if(last_output_time.microseconds == 0 || last_output_time > laser_vars.output_scan.time)
             last_output_time = laser_vars.output_scan.time;
@@ -119,6 +120,13 @@ void LaserScanner::handleHorizontalScan(const velodyne_fire16_t& horizontal_scan
 
         // write sample to output port
         if(laser_vars.head_pos == UpperHead){
+
+            // write velodyne time to output port before processing further
+            _velodyne_time.write( last_gps_timestamp );
+            _accumulated_velodyne_time.write( base::Time::fromMicroseconds(lidar_time_ref) );
+            _estimated_clock_offset.write( estimated_clock_offset );
+            base::Time current_time_stamp = base::Time::fromMicroseconds(lidar_time_ref + estimated_clock_offset);
+            laser_vars.output_scan.time = current_time_stamp;
 
             _laser_scans.write(laser_vars.output_scan);
 
@@ -273,7 +281,6 @@ void LaserScanner::handleHorizontalScan(const velodyne_fire16_t& horizontal_scan
     // add the new vertical scan to the output data
     laserdriver.convertToVerticalMultilevelScan(horizontal_scan, laser_vars.output_scan.horizontal_scans[laser_vars.horizontal_scan_count],lower_upper_shot);
     laser_vars.horizontal_scan_count++;
-    laser_vars.last_sample_time = base::Time::now();
 }
 
 void LaserScanner::addDummyData(const base::Angle& next_angle, LaserScanner::LaserHeadVariables& laser_vars)
@@ -369,8 +376,10 @@ bool LaserScanner::configureHook()
     if (! RTT::TaskContext::configureHook())
         return false;
 
-    upper_head.timestamp_estimator = new aggregator::TimestampEstimator(base::Time::fromSeconds(20), base::Time::fromMilliseconds(100));
-    lower_head.timestamp_estimator = new aggregator::TimestampEstimator(base::Time::fromSeconds(20), base::Time::fromMilliseconds(100));
+    //upper_head.timestamp_estimator = new aggregator::TimestampEstimator(base::Time::fromSeconds(15), base::Time::fromMilliseconds(100));
+    //lower_head.timestamp_estimator = new aggregator::TimestampEstimator(base::Time::fromSeconds(15), base::Time::fromMilliseconds(100));
+    upper_head.timestamp_estimator = new aggregator::TimestampEstimator(base::Time::fromSeconds(1), base::Time::fromMilliseconds(100), INT_MAX);
+    lower_head.timestamp_estimator = new aggregator::TimestampEstimator(base::Time::fromSeconds(1), base::Time::fromMilliseconds(100), INT_MAX);
 
     return true;
 }
@@ -475,8 +484,10 @@ void LaserScanner::updateHook()
         {
             // Accumulate the 32 Bit timestamps in a 64 Bit storage
             // According to the datasheet the 32 Bit timestamps are clamped at hour level, so we have to use modulo here
-            uint32_t diff = ((gps_timestamp - last_gps_timestamp) % (3600 * 1000000));
-            lidar_time_ref = lidar_time_ref + diff;
+            uint32_t velodyne_diff = ((gps_timestamp - last_gps_timestamp) % (3600 * 1000000));
+            lidar_time_ref = lidar_time_ref + velodyne_diff;
+            // Update estimated clock offset (IIR filter)
+            estimated_clock_offset = (9 * estimated_clock_offset + ((uint64_t)base::Time::now().toMicroseconds() - lidar_time_ref)) / 10;
             upper_head.timestamp_estimator->updateReference( base::Time::fromMicroseconds(lidar_time_ref) );
             lower_head.timestamp_estimator->updateReference( base::Time::fromMicroseconds(lidar_time_ref) );
         }
