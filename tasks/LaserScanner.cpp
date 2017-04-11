@@ -487,7 +487,7 @@ void LaserScanner::updateHook()
             uint32_t velodyne_diff = ((gps_timestamp - last_gps_timestamp) % (3600 * 1000000));
             lidar_time_ref = lidar_time_ref + velodyne_diff;
             // Update estimated clock offset (IIR filter)
-            estimated_clock_offset = (9 * estimated_clock_offset + ((uint64_t)base::Time::now().toMicroseconds() - lidar_time_ref)) / 10;
+            estimated_clock_offset = (9 * estimated_clock_offset + ((int64_t)base::Time::now().toMicroseconds() - (int64_t)lidar_time_ref)) / 10;
             upper_head.timestamp_estimator->updateReference( base::Time::fromMicroseconds(lidar_time_ref) );
             lower_head.timestamp_estimator->updateReference( base::Time::fromMicroseconds(lidar_time_ref) );
         }
