@@ -135,6 +135,8 @@ void LaserScanner::updateHook()
                 // write out new samples
                 if(!_only_write_newest_sample.value() && valid_sample)
                     _laser_scans.write(upper_sample);
+
+                _ir_interp_frame.write(createIrInterpFrame(upper_sample));
             }
             no_packet_timeout.restart();
         }
@@ -164,6 +166,43 @@ void LaserScanner::updateHook()
         RTT::log(RTT::Error) << TaskContext::getName() << ": " << e.what() << RTT::endlog();
         exception(IO_ERROR);
     }
+}
+
+base::samples::Frame LaserScanner::createIrInterpFrame(base::samples::DepthMap sample)
+{
+    int azimuth_count = 1808;//FIXME (int) laser_vars.horizontal_scan_count;
+    char ir_interpImage[azimuth_count*150*2]; //FIXME note that the values are exactly 100 times larger than their corresponding raw measurements, so that no division is done. Divide by 100 to get a corresponding number between 0 - 255.
+    uint16_t interp_ir_first;
+    uint16_t interp_ir_second;
+
+    //handle interpolated images here.
+    for(int j = 0; j<VELODYNE_NUM_LASERS-1; j++)
+    {
+        for(int i = 0; i<azimuth_count; i++)
+        {
+            for(int k = 0; k<10; k++)
+            {
+
+                interp_ir_first = (uint16_t) sample.horizontal_scans[i].vertical_scans[j].remission;
+                interp_ir_first = interp_ir_first*(100-k*10);
+                interp_ir_second = (uint16_t) sample.horizontal_scans[i].vertical_scans[j+1].remission;
+                interp_ir_second = interp_ir_second*(k*10);
+                ir16 = interp_ir_first + interp_ir_second;
+
+                ir_holder[0] = ir16 & 0x00ff;
+                ir_holder[1] = (ir16 >> 8);
+                ir_interp_image[0 + j*azimuth_count*10*2 + i*2 + k*azimuth_count*2] = ir_holder[0];
+                ir_interp_image[1 + j*azimuth_count*10*2 + i*2 + k*azimuth_count*2] = ir_holder[1];
+            }
+        }
+    }
+    if(!ir_interp_frame){
+        ir_interp_frame = new base::samples::frame::Frame(azimuth_count,150,16,base::samples::frame::MODE_GRAYSCALE);
+    }
+    ir_interp_frame->setImage(ir_interp_image, azimuth_count*150*2); // FIXME remove magic numbers
+    ir_interp_frame->time = base::time::now(); // FIXME set to time of scan
+    ir_interp_frame.reset(ir_interp);
+    return ir_interp_frame;
 }
 
 void LaserScanner::errorHook()
