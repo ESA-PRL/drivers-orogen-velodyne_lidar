@@ -19,7 +19,7 @@ task_context "LaserScanner" do
     needs_configuration
 
     # The HDL-32E and VLP-16 are currently supported
-    property "sensor_type", "/velodyne_lidar/VelodyneSensor", :HDL32E
+    property "sensor_type", "/velodyne_lidar/VelodyneSensor", :VLP16
 
     # The timeout on write. Defaults to one second.
     property "io_write_timeout", "/base/Time"
